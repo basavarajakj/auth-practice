@@ -1,5 +1,6 @@
 'use client';
 
+import axios from "axios";
 import { useState, useCallback } from "react";
 import { BsGithub, BsGoogle } from 'react-icons/bs';
 import {
@@ -7,12 +8,22 @@ import {
   useForm,
   SubmitHandler,
 } from "react-hook-form";
+import * as z from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod'
 
 import Input from "@/components/inputs/Input";
 import Button from "@/components/Button";
 import AuthSocialButton from "./AuthSocialButton";
+import { toast } from "react-hot-toast";
+import { signIn } from "next-auth/react";
 
 type Variant = "LOGIN" | "REGISTER";
+
+const schema = z.object({
+  name: z.string().min(1, { message: 'Name is required' }),
+  email: z.string().email({ message: "Invalid email" }),
+  password: z.string().min(1, { message: 'Password is required'})
+})
 
 const AuthForm = () => {
   const [variant, setVariant] = useState<Variant>('LOGIN');
@@ -36,18 +47,32 @@ const AuthForm = () => {
       name: '',
       email: '',
       password: '',
-    },
+      },
+      resolver: zodResolver(schema)
   });
 
   const onSubmit: SubmitHandler<FieldValues> = (data) => {
 
     console.log(data)
     if (variant === 'REGISTER') {
-      //TODO: Axios register
+      axios.post('/api/register', data)
+      .catch(() => toast.error('Something went wrong!'))
     }
 
     if (variant === 'LOGIN') {
-      //TODO: NextAuth SignIn
+      signIn('credentials', {
+        ...data,
+        redirect:false
+      })
+      .then((callback) => {
+        if (callback?.error) {
+          toast.error('Invalid credentials');
+        }
+
+        if (callback?.ok) {
+          toast.success('Logged in!')
+        }
+      })
     }
   }
 
@@ -83,17 +108,19 @@ const AuthForm = () => {
         >
           {variant === 'REGISTER' && (
             <Input
-            id="name"
-            label="Name"
-            register={register}
-            errors={errors}
-            disabled={isLoading}
-          />
+              id="name"
+              label="Name"
+              required
+              register={register}
+              errors={errors}
+              disabled={isLoading}
+            />
           )}
           <Input
             id="email"
             label="Email"
             type="email"
+            required
             register={register}
             errors={errors}
             disabled={isLoading}
@@ -102,6 +129,7 @@ const AuthForm = () => {
             id="password"
             label="Password"
             type="password"
+            required
             register={register}
             errors={errors}
             disabled={isLoading}
@@ -131,7 +159,7 @@ const AuthForm = () => {
             </div>
 
             <div className="relative flex justify-center items-center">
-              <span className="bg-white px-2 text-gray-500">
+              <span className="bg-white px-2 text-gray-500 text-sm">
                 Or continue with
               </span>
             </div>

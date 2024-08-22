@@ -71,6 +71,7 @@ const Input = ({
             disabled && "opacity-50 cursor-default"
           )}
         />
+        {/* {errors && <p className="text-red-600">{errors.i}</p>} */}
       </div>
 
     </div>
